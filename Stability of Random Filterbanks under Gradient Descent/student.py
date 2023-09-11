@@ -5,13 +5,10 @@ import torch.nn as nn
 import pytorch_lightning as pl
 import torch.nn.utils.parametrize as P
 import torch.nn.functional as F
-import teacher
 
-# where do the initialization values go?
+# where do the initialization values for the students go?
 
-def weight_init()
-    w_init, w_tight = fb.random_filterbank(spec["seg_length"], spec["num_filters"], spec["win_length"], tight=True, to_torch=True, support_only=True)
-
+#    w_init, w_tight = fb.random_filterbank(spec["seg_length"], spec["num_filters"], spec["win_length"], tight=True, to_torch=True, support_only=True)
 
 class KappaLoss(nn.Module):
     def __init__(self):
