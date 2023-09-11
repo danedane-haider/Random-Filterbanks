@@ -5,6 +5,13 @@ import torch.nn as nn
 import pytorch_lightning as pl
 import torch.nn.utils.parametrize as P
 import torch.nn.functional as F
+import teacher
+
+# where do the initialization values go?
+
+def weight_init()
+    w_init, w_tight = fb.random_filterbank(spec["seg_length"], spec["num_filters"], spec["win_length"], tight=True, to_torch=True, support_only=True)
+
 
 class KappaLoss(nn.Module):
     def __init__(self):
@@ -15,14 +22,15 @@ class KappaLoss(nn.Module):
         w_hat = torch.sum(torch.abs(torch.fft.fft(w,dim=1))**2,dim=0)
         B = torch.max(w_hat,dim=0).values
         A = torch.min(w_hat,dim=0).values
-        loss = 0.5*torch.mean(1-self.loss(inputs, targets)) + beta*B/A
-        return loss
+        kappa = B/A
+        loss = 0.5*torch.mean(1-self.loss(inputs, targets)) + beta*kappa
+        return loss, kappa
 
 class Student(pl.LightningModule):
     def __init__(self, spec):
         super().__init__()
         self.spec = spec
-        self.kappa = []
+        self.cond = []
         self.train_outputs = []
         self.cos = nn.CosineSimilarity(dim=-1)
         self.loss = KappaLoss()
@@ -33,10 +41,11 @@ class Student(pl.LightningModule):
         outputs = self(x)
         w = baseline.psi.weight[:,0,:]
         w = F.pad(w,(0,spec["seg_length"]-spec["win_length"]), value=0)
-        loss = 0.5 * (1-self.loss(outputs[:,1:,:], feat[:,1:,:], w, beta).mean())
+        loss, kappa = 0.5 * (1-self.loss(outputs[:,1:,:], feat[:,1:,:], w, beta).mean())
         loss_cos = 0.5 * (1-self.cos(outputs[:,1:,:], feat[:,1:,:]).mean())
         self.train_outputs.append(loss)
-        return {'loss': loss}, 
+        self.cond.append(kappa)
+        return {'loss': loss, 'loss_cos': loss_cos, 'kappa': kappa}
     
     def on_train_epoch_start(self):
         self.train_outputs = []
@@ -67,6 +76,7 @@ class TDFilterbank_real(torch.nn.Module):
         x = x.reshape(x.shape[0], 1, x.shape[-1])
         x = F.pad(x, (0, spec["window_size"]-1), mode='circular',)
         Wx = torch.abs(self.psi(x))
-        phi = torch.ones(spec["num_filters"], spec["num_filters"], spec["window_size"])
+        hann = torch.hann_window(spec["window_length"]).unsqueeze(0).unsqueeze(0)
+        phi = torch.ones(spec["num_filters"], spec["num_filters"], spec["window_length"])*hann
         Ux = F.conv1d(Wx, phi, bias=None, stride=256, padding=0)
         return Ux

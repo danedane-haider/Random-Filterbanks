@@ -214,7 +214,8 @@ def filterbank_response_fft(x, w, spec):
     w = w.unsqueeze(0).float()
     Wx = torch.fft.ifft(torch.fft.fft(x, dim=-1) * w, dim=-1)
     Wx = torch.abs(Wx)
-    phi = torch.ones(spec["num_filters"], spec["num_filters"], spec["window_length"])
+    hann = torch.hann_window(spec["window_length"]).unsqueeze(0).unsqueeze(0)
+    phi = torch.ones(spec["num_filters"], spec["num_filters"], spec["window_length"])*hann
     Ux = F.conv1d(Wx, phi, bias=None, stride=256, padding=0)
     return Ux
 
