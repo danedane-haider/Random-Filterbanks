@@ -32,8 +32,7 @@ def random_filterbank(N, J, T, norm=True, tight=True, to_torch=True, support_onl
     if support_only:
         w_cat = w
     else:
-        z = np.zeros([J, N-T])
-        w_cat = np.concatenate((w,z),axis=1)
+        w_cat = np.pad(w, ((0,0),(0, N-T)), constant_values=0)
     if tight:
         W = np.concatenate([sp.linalg.circulant(w_cat[k, :]) for k in range(w_cat.shape[0])])
         S = np.matmul(W.T,W)
