@@ -65,7 +65,7 @@ def S_diag(w):
 # generate a dataset of random sine waves
 
 def generate_random_sine(sample_rate, f_min, f_max, length, batch_size):
-    time = torch.arange(length).reshape(1, -1) // sample_rate
+    time = torch.arange(length).reshape(1, -1) / sample_rate
     log2_min = np.log2(f_min)
     log2_range = np.log2(f_max) - np.log2(f_min)
     while True:
