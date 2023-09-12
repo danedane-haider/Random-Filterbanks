@@ -1,16 +1,14 @@
 import numpy as np
 import scipy.signal
 import torch
-from torch.utils.data import Dataset, DataLoader
-from collections import Counter
-import torchaudio
-import itertools
 import soundfile as sf
 import torch.nn.functional as F
 import scipy as sp
 import torch.nn as nn
-import fb
 import pickle
+
+import fb
+import teacher
 
 HYPERPARAMS = {
     "speech": {
@@ -26,7 +24,8 @@ HYPERPARAMS = {
 
 # some parameters 
 
-spec = HYPERPARAMS["speech"]
+domain = "speech"
+spec = HYPERPARAMS[domain]
 n_epochs = 100
 epoch_size = 8000
 lr = 1e-4
@@ -35,7 +34,7 @@ beta = 0.00005
 ###############################################################################
 # set directory where to save the output, losses and condition numbers
 
-save_dir = ''
+save_dir = '/scratch/vl1019/icassp24_data/'
 
 ###############################################################################
 
@@ -61,16 +60,9 @@ w_init = fb.random_filterbank(spec["N"], spec["J"], spec["T"], tight=False, to_t
 ###############################################################################
 # dataloading
 
-
-##### load the data such that it comes in shape (batch_size, 1, spec["N"]) when calling next(iter(data))
-# speech_data = ???
-# data = DataLoader(speech_data, batch_size=spec["batch_size"], shuffle=True)
-
-# optimally get a sample from the middle segment
-# def crop(x):
-#     start = max(x.shape[-1]//2 - spec["N"]//2, 0)
-#     stop = min(x.shape[-1]//2 + spec["N"]//2, x.shape[-1]-1)
-#     return torch.tensor(x[:,:,start:stop], dtype=torch.float32)
+dataset = teacher.SpectrogramDataModule(
+    sav_dir=save_dir, domain=domain, batch_size=spec[domain]["batch_size"]
+)
 
 
 ###############################################################################
@@ -143,7 +135,7 @@ def train(baseline, penalization, lr, beta, n_epochs, epoch_size):
 
     running_loss = 0.0
     for _ in range(epoch_size):
-        inputs = next(iter(data))
+        inputs = next(iter(dataset))
         outputs = baseline(inputs)
         targets = filterbank_response_fft(inputs, MEL_torch)
         loss = 0.5*torch.mean(1-cos(outputs, targets))
@@ -159,8 +151,9 @@ def train(baseline, penalization, lr, beta, n_epochs, epoch_size):
 
     for _ in range(n_epochs):
         running_loss = 0.0
+        dataset_iter = iter(dataset.train_dataloader)
         for _ in range(epoch_size):
-            inputs = next(iter(data))
+            inputs = next(dataset_iter)
             optimizer.zero_grad()
             outputs = baseline(inputs)
             targets = filterbank_response_fft(inputs, MEL_torch)
