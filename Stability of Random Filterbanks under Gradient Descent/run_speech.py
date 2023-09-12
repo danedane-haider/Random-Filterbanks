@@ -55,8 +55,6 @@ MEL_torch = torch.from_numpy(MEL_freq.T) # is now shaped as (J, N)
 w_init = fb.random_filterbank(spec["N"], spec["J"], spec["T"], tight=False, to_torch=True, support_only=True)
 
 
-
-
 ###############################################################################
 # dataloading
 
@@ -66,10 +64,6 @@ dataset = teacher.SpectrogramDataModule(
 
 
 ###############################################################################
-
-
-
-
 
 def filterbank_response_fft(x, w):
     x = x.reshape(x.shape[0], 1, x.shape[-1])
@@ -122,7 +116,7 @@ class KappaLoss(nn.Module):
     
 # the training routine
 
-def train(baseline, penalization, lr, beta, n_epochs, epoch_size):
+def train(baseline, dataset, penalization, lr, beta, n_epochs, epoch_size):
     optimizer = torch.optim.Adam(baseline.parameters(), lr=lr)
     cos = torch.nn.CosineSimilarity(dim=0)
     criterion = KappaLoss()
@@ -134,8 +128,7 @@ def train(baseline, penalization, lr, beta, n_epochs, epoch_size):
     conditions = []
 
     running_loss = 0.0
-    for _ in range(epoch_size):
-        inputs = next(iter(dataset))
+    for inputs in iter(dataset.train_dataloader):
         outputs = baseline(inputs)
         targets = filterbank_response_fft(inputs, MEL_torch)
         loss = 0.5*torch.mean(1-cos(outputs, targets))
@@ -146,14 +139,11 @@ def train(baseline, penalization, lr, beta, n_epochs, epoch_size):
     w = np.pad(w, ((0,0),(0, spec["N"]-spec["T"])), constant_values=0)
     A,B = fb.frame_bounds_lp(w)
     conditions.append(B/A)
-    
     losses.append(running_loss)
 
     for _ in range(n_epochs):
         running_loss = 0.0
-        dataset_iter = iter(dataset.train_dataloader)
-        for _ in range(epoch_size):
-            inputs = next(dataset_iter)
+        for inputs in iter(dataset.train_dataloader):
             optimizer.zero_grad()
             outputs = baseline(inputs)
             targets = filterbank_response_fft(inputs, MEL_torch)
@@ -189,6 +179,7 @@ baseline_no = TDFilterbank_real(spec, w_init).to(device)
 
 losses_no, conditions_no = train(
     baseline=baseline_no,
+    dataset=dataset,
     penalization='cos',
     lr=lr,
     beta=beta,
@@ -206,6 +197,7 @@ baseline_kappa = TDFilterbank_real(spec, w_init).to(device)
 
 losses_kappa, conditions_kappa = train(
     baseline=baseline_kappa,
+    dataset=dataset,
     penalization='kappa',
     lr=lr,
     beta=beta,
