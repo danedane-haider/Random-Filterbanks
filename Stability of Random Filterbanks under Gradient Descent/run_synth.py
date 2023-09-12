@@ -1,9 +1,7 @@
 import numpy as np
 import scipy.signal
 import torch
-import matplotlib
 from torch.utils.data import Dataset, DataLoader
-from matplotlib import pyplot as plt
 from collections import Counter
 import torchaudio
 import itertools
