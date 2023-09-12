@@ -9,18 +9,20 @@ import torch.nn.functional as F
 # where do the initialization values for the students go?
 
 #    w_init, w_tight = fb.random_filterbank(spec["seg_length"], spec["num_filters"], spec["win_length"], tight=True, to_torch=True, support_only=True)
+#         w = baseline.psi.weight[:,0,:]
+#        w = F.pad(w,(0,spec["seg_length"]-spec["win_length"]), value=0)
 
 class KappaLoss(nn.Module):
     def __init__(self):
         super(KappaLoss, self).__init__()
         self.loss = nn.CosineSimilarity(dim=-1)
 
-    def forward(self, inputs, targets, w, beta):
+    def forward(self, inputs, targets, w):
         w_hat = torch.sum(torch.abs(torch.fft.fft(w,dim=1))**2,dim=0)
         B = torch.max(w_hat,dim=0).values
         A = torch.min(w_hat,dim=0).values
         kappa = B/A
-        loss = 0.5*torch.mean(1-self.loss(inputs, targets)) + beta*kappa
+        loss = 0.5*torch.mean(1-self.loss(inputs, targets)) + 0.0001*kappa
         return loss, kappa
 
 class Student(pl.LightningModule):
@@ -32,30 +34,31 @@ class Student(pl.LightningModule):
         self.cos = nn.CosineSimilarity(dim=-1)
         self.loss = KappaLoss()
 
-    def step(self, batch, baseline, spec, beta):
+    def training_step(self, batch):
         feat = batch['feature'].squeeze()
         x = batch['x']
         outputs = self(x)
-        w = baseline.psi.weight[:,0,:]
-        w = F.pad(w,(0,spec["seg_length"]-spec["win_length"]), value=0)
-        loss, kappa = 0.5 * (1-self.loss(outputs[:,1:,:], feat[:,1:,:], w, beta).mean())
+        loss, kappa = 0.5 * (1-self.loss(outputs[:,1:,:], feat[:,1:,:], w).mean())
         loss_cos = 0.5 * (1-self.cos(outputs[:,1:,:], feat[:,1:,:]).mean())
         self.train_outputs.append(loss)
-        self.cond.append(kappa)
-        return {'loss': loss, 'loss_cos': loss_cos, 'kappa': kappa}
+        return {'loss': loss}
     
     def on_train_epoch_start(self):
         self.train_outputs = []
 
     def on_train_epoch_end(self):
         avg_loss = torch.tensor(self.train_outputs).mean()
+
+        self.cond.append(kappa)
+        kappa = self.cond
         self.log('train_loss', avg_loss, prog_bar=False)
+        self.log('kappa', kappa, prog_bar=False)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=1e-4)
 
 
-class TDFilterbank_real(torch.nn.Module):
+class TDFilterbank(Student):
     def __init__(self, spec, w):
         super().__init__()
         

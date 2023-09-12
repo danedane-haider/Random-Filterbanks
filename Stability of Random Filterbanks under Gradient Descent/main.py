@@ -67,7 +67,6 @@ def run(sav_dir, domain, arch, init_id, batch_size, job_id):
     # Setup checkpoints and Tensorboard logger
     checkpoint_cb = ModelCheckpoint(
         dirpath=model_sav_path,
-        monitor="val_loss",
         save_last=True,
         filename="best",
         save_weights_only=False,
