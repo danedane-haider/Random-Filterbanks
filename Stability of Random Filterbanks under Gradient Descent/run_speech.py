@@ -33,7 +33,7 @@ spec = HYPERPARAMS["speech"]
 n_epochs = 100
 epoch_size = 8000
 lr = 1e-4
-beta = 0.0001
+beta = 0.00005
 
 ###############################################################################
 # set directory where to save the output, losses and condition numbers

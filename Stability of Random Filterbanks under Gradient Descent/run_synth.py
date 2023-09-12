@@ -32,7 +32,7 @@ spec = HYPERPARAMS["synth"]
 n_epochs = 100
 epoch_size = 8000
 lr = 1e-4
-beta = 0.0001
+beta = 0.00005
 
 
 
