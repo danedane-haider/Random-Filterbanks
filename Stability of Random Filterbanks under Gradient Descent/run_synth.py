@@ -39,7 +39,7 @@ beta = 0.00005
 ###############################################################################
 # set directory where to save the output, losses and condition numbers
 
-save_dir = ''
+save_dir = '/scratch/vl1019/icassp24_data/'
 
 ###############################################################################
 
