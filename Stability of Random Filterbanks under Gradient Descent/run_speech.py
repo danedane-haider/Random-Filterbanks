@@ -134,6 +134,7 @@ def train(baseline, dataset, penalization, lr, beta, n_epochs, epoch_size):
         loss = 0.5*torch.mean(1-cos(outputs, targets))
         running_loss += loss.item()
     print(1000 * running_loss)
+    sys.stdout.flush()
 
     w = baseline.psi.weight.detach().numpy()[:,0,:]
     w = np.pad(w, ((0,0),(0, spec["N"]-spec["T"])), constant_values=0)
@@ -165,6 +166,7 @@ def train(baseline, dataset, penalization, lr, beta, n_epochs, epoch_size):
         conditions.append(B/A)
 
         print(1000 * running_loss)
+        sys.stdout.flush()
 
     return losses, conditions
 
