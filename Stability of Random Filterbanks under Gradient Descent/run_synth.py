@@ -1,13 +1,10 @@
 import numpy as np
 import scipy.signal
 import torch
-import matplotlib
 from torch.utils.data import Dataset, DataLoader
-from matplotlib import pyplot as plt
 from collections import Counter
 import torchaudio
 import itertools
-import tqdm
 import torch.nn.functional as F
 import scipy as sp
 import torch.nn as nn
@@ -39,7 +36,7 @@ beta = 0.00005
 ###############################################################################
 # set directory where to save the output, losses and condition numbers
 
-save_dir = ''
+save_dir = '/scratch/vl1019/icassp24_data/'
 
 ###############################################################################
 
@@ -152,7 +149,7 @@ def train(baseline, penalization, lr, beta, n_epochs, epoch_size):
 
     for _ in range(n_epochs):
         running_loss = 0.0
-        for i in tqdm.tqdm(range(epoch_size)):
+        for i in range(epoch_size):
             inputs = next(data)
             optimizer.zero_grad()
             outputs = baseline(inputs)
