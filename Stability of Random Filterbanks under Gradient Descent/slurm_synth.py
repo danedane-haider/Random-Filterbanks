@@ -2,7 +2,7 @@ import os
 import slurmjobs
 
 jobs = slurmjobs.Singularity(
-    "python slurm_synth.py",
+    "python run_synth.py",
     f'/scratch/{os.getenv("USER")}/ic24_overlay-15GB-500K.ext3',
     f'/scratch/work/public/singularity/cuda12.1.1-cudnn8.9.0-devel-ubuntu22.04.2.sif',
     email='',
