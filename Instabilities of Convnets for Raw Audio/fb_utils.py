@@ -12,7 +12,7 @@ def random_filterbank_energy(x, J, N, T):
         y += np.linalg.norm(np.fft.ifft(np.fft.fft(x)*np.fft.fft(w_pad[ii,:])))**2
     return y
 
-def random_filterbank_experiment(x, J, N, T_vals, num = 500):
+def random_filterbank_experiment(x, J, N, T_vals, num = 1000):
     T_len = len(T_vals)
     Y = np.zeros([T_len, num])
     for jj in range(T_len):
