@@ -14,7 +14,7 @@ HYPERPARAMS = {
         "sr": 16000,
         "fmin": 64,
         "fmax": 8000,
-        "stride": 341,
+        "stride": 12,
         "batch_size": 64
     },
     "MEL": {
@@ -115,9 +115,11 @@ def filterbank_response_fft(x, w, spec):
     Wx = torch.fft.ifft(torch.fft.fft(x, dim=-1) * w, dim=-1)
     Wx = torch.abs(Wx)
     Wx = Wx[:,:,::spec["stride"]]
-    hann = torch.hann_window(spec["N"]//spec["stride"]).unsqueeze(0).unsqueeze(0)
-    phi = torch.ones(spec["J"], spec["J"], spec["N"]//spec["stride"])*hann
-    Ux = F.conv1d(Wx, phi, bias=None, stride=1, padding=0)
+    # hann = torch.hann_window(spec["N"]//spec["stride"]).unsqueeze(0).unsqueeze(0)
+    # phi = torch.ones(spec["J"], spec["J"], spec["N"]//spec["stride"])*hann
+    # Ux = F.conv1d(Wx, phi, bias=None, stride=1, padding=0)
+
+    Ux = F.avg_pool1d(Wx, kernel_size=spec["N"]//spec["stride"], stride=1)
     return Ux
 
 # generate a dataset of random sine waves

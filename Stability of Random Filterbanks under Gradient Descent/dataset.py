@@ -53,6 +53,7 @@ class TinySol(Dataset):
             "instrument": instrument,
             "pitch_id": pitch_id,
             "dynamics_id": dynamics_id,
+            "fold": fold,
         }
 
 
@@ -64,17 +65,29 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     target = 'VQT'
-    with open('targets/'+target+'.pkl', 'rb') as fp:
+    # get current working directory of file
+    cwd = os.path.dirname(os.path.abspath(__file__))
+
+    with open(cwd+'/targets/'+target+'.pkl', 'rb') as fp:
         FB = pickle.load(fp)
 
     FB_freq = FB["freqz"]
     FB_torch = torch.from_numpy(FB_freq.T)
 
-    spec = HYPERPARAMS[target]
+    spec = {
+        "N": 2**12,
+        "J": 96,
+        "T": 1024,
+        "sr": 16000,
+        "fmin": 64,
+        "fmax": 8000,
+        "stride": 512,
+        "batch_size": 1
+    }
 
     example = TinySol(
-        info_csv_path="/Users/Dane/Documents/GitHub/Random-Filterbanks/TinySOL_metadata.csv",
-        data_dir="/Users/Dane/Documents/GitHub/Random-Filterbanks/TinySOL2020",
+        info_csv_path="/Users/felixperfler/Documents/ISF/Random-Filterbanks/TinySOL_metadata.csv",
+        data_dir="/Users/felixperfler/Documents/ISF/Random-Filterbanks/TinySOL2020",
         target_filterbank=FB_torch,
         filterbank_specs=spec,
     )
@@ -83,5 +96,5 @@ if __name__ == "__main__":
 
     for batch in dataloader:
         x_out = batch["x_out"]
-
-        break
+        plt.imshow(x_out[0].numpy())
+        plt.show()
