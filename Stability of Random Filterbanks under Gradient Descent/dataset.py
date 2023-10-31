@@ -11,7 +11,7 @@ class TinySol(Dataset):
                  info_csv_path,
                  data_dir,
                  filterbank_specs,
-                 target_filterbank):
+                 target_filterbank,):
         
         self.info_df = pd.read_csv(info_csv_path)
         self.data_dir = data_dir
@@ -19,6 +19,8 @@ class TinySol(Dataset):
         self.filterbank_specs = filterbank_specs
         self.target_filterbank = target_filterbank
         self.seg_length = 4096/44100
+
+        # TODO Split into train, val, test 80/10/10
 
     def __len__(self):
         return self.length
