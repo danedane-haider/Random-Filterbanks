@@ -38,8 +38,8 @@ if __name__ == "__main__":
             "epochs": 100,
         }
 
-    info_csv_path="/Users/felixperfler/Documents/ISF/Random-Filterbanks/TinySOL_metadata.csv"
-    data_dir="/Users/felixperfler/Documents/ISF/Random-Filterbanks/TinySOL2020"
+    info_csv_path="TinySOL_metadata.csv"
+    data_dir="TinySOL2020"
 
     random_filterbank = fb.random_filterbank(config["N"], config["J"], config["T"], tight=False, support_only=True)
     target = 'VQT'
