@@ -1,7 +1,6 @@
 import torch
 from torch.utils.data import Dataset
-from fb_utils import filterbank_response_fft, random_filterbank
-import librosa
+from fb_utils import filterbank_response_fft
 import soundfile
 import os
 import pandas as pd
@@ -11,16 +10,34 @@ class TinySol(Dataset):
                  info_csv_path,
                  data_dir,
                  filterbank_specs,
-                 target_filterbank,):
-        
-        self.info_df = pd.read_csv(info_csv_path)
+                 target_filterbank,
+                 dataset_type='train'):
+
+        info_df = pd.read_csv(info_csv_path)
         self.data_dir = data_dir
-        self.length = len(self.info_df)
         self.filterbank_specs = filterbank_specs
         self.target_filterbank = target_filterbank
         self.seg_length = 4096/44100
 
-        # TODO Split into train, val, test 80/10/10
+        # split dataset into train, val, test
+        dataset_length = len(info_df)
+        train_dataset_length = int(dataset_length*0.8)
+        val_dataset_length = int(dataset_length*0.1)
+        test_dataset_length = int(dataset_length*0.1)
+
+        # scramble dataset
+        info_df = info_df.sample(frac=1).reset_index(drop=True)
+
+        # get dataset type
+        if dataset_type == 'train':
+            self.info_df = info_df.iloc[:train_dataset_length]
+            self.length = train_dataset_length
+        elif dataset_type == 'val':
+            self.info_df = info_df.iloc[train_dataset_length:train_dataset_length+val_dataset_length]
+            self.length = val_dataset_length
+        elif dataset_type == 'test':
+            self.info_df = info_df.iloc[train_dataset_length+val_dataset_length:]
+            self.length = test_dataset_length
 
     def __len__(self):
         return self.length
@@ -34,18 +51,18 @@ class TinySol(Dataset):
         instrument = info["Instrument (abbr.)"]
         pitch_id = info["Pitch ID"]
         dynamics_id = info["Dynamics ID"]
-        
+
         # Get audio
         x, fs = soundfile.read(os.path.join(self.data_dir, info["Path"]))
 
         seg_length = self.seg_length * fs
-        
-        # sample from middle a segment 
+
+        # sample from middle a segment
         start = int(max(x.shape[0]//2 - seg_length//2, 0))
         stop = int(min(x.shape[0]//2 + seg_length//2, x.shape[0]-1))
         x = torch.tensor(x[start:stop], dtype=torch.float32)
         # x = librosa.util.fix_length(x, size=seg_length)
-        
+
         x_out = filterbank_response_fft(x.unsqueeze(0), self.target_filterbank, self.filterbank_specs).squeeze(0)
 
         return {
@@ -92,9 +109,11 @@ if __name__ == "__main__":
         data_dir="/Users/felixperfler/Documents/ISF/Random-Filterbanks/TinySOL2020",
         target_filterbank=FB_torch,
         filterbank_specs=spec,
+        dataset_type='test'
     )
 
     dataloader = DataLoader(example, batch_size=1, shuffle=True, num_workers=0)
+    print(len(dataloader))
 
     for batch in dataloader:
         x_out = batch["x_out"]
