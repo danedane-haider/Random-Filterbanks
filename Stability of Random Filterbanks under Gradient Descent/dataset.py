@@ -1,17 +1,17 @@
+import os
 import torch
 from torch.utils.data import Dataset
 from fb_utils import filterbank_response_fft
 import soundfile
-import os
 import pandas as pd
 
 class TinySol(Dataset):
     def __init__(self,
-                 info_csv_path,
-                 data_dir,
-                 filterbank_specs,
-                 target_filterbank,
-                 dataset_type='train'):
+                 info_csv_path: str,
+                 data_dir: str,
+                 filterbank_specs: dict,
+                 target_filterbank: torch.Tensor,
+                 dataset_type:str='train'):
 
         info_df = pd.read_csv(info_csv_path)
         self.data_dir = data_dir
@@ -74,48 +74,3 @@ class TinySol(Dataset):
             "dynamics_id": dynamics_id,
             "fold": fold,
         }
-
-
-
-if __name__ == "__main__":
-    import pickle
-    from fb_utils import HYPERPARAMS
-    from torch.utils.data import DataLoader
-    import matplotlib.pyplot as plt
-
-    target = 'VQT'
-    # get current working directory of file
-    cwd = os.path.dirname(os.path.abspath(__file__))
-
-    with open(cwd+'/targets/'+target+'.pkl', 'rb') as fp:
-        FB = pickle.load(fp)
-
-    FB_freq = FB["freqz"]
-    FB_torch = torch.from_numpy(FB_freq.T)
-
-    spec = {
-        "N": 2**12,
-        "J": 96,
-        "T": 1024,
-        "sr": 16000,
-        "fmin": 64,
-        "fmax": 8000,
-        "stride": 512,
-        "batch_size": 1
-    }
-
-    example = TinySol(
-        info_csv_path="/Users/felixperfler/Documents/ISF/Random-Filterbanks/TinySOL_metadata.csv",
-        data_dir="/Users/felixperfler/Documents/ISF/Random-Filterbanks/TinySOL2020",
-        target_filterbank=FB_torch,
-        filterbank_specs=spec,
-        dataset_type='test'
-    )
-
-    dataloader = DataLoader(example, batch_size=1, shuffle=True, num_workers=0)
-    print(len(dataloader))
-
-    for batch in dataloader:
-        x_out = batch["x_out"]
-        plt.imshow(x_out[0].numpy())
-        plt.show()

@@ -1,9 +1,6 @@
 import numpy as np
 import torch
-from matplotlib import pyplot as plt
-import tqdm
 import torch.nn.functional as F
-import torch.nn as nn
 import pickle
 import fb_utils as fb
 from torch.utils.data import DataLoader

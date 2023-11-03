@@ -15,7 +15,7 @@ class KappaLoss(nn.Module):
             B = torch.max(w_hat,dim=0).values
             A = torch.min(w_hat,dim=0).values
 
-            loss = base_loss + self.beta*B/A
+            loss = base_loss + self.beta*(B/A - 1)
         else:
             loss = base_loss
 
