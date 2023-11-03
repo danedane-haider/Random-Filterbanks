@@ -1,1 +1,4 @@
 TinySOL2020/
+.mypy_cache/
+NTVOW/
+.DS_Store
