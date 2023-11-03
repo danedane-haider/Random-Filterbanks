@@ -1,9 +1,11 @@
 import torch
 from torch.utils.data import Dataset
+import numpy as np
 from fb_utils import filterbank_response_fft
 import soundfile
 import os
 import pandas as pd
+import librosa
 
 class TinySol(Dataset):
     def __init__(self,
@@ -21,9 +23,8 @@ class TinySol(Dataset):
 
         # split dataset into train, val, test
         dataset_length = len(info_df)
-        train_dataset_length = int(dataset_length*0.8)
+        train_dataset_length = int(dataset_length*0.9)
         val_dataset_length = int(dataset_length*0.1)
-        test_dataset_length = int(dataset_length*0.1)
 
         # scramble dataset
         info_df = info_df.sample(frac=1).reset_index(drop=True)
@@ -33,11 +34,8 @@ class TinySol(Dataset):
             self.info_df = info_df.iloc[:train_dataset_length]
             self.length = train_dataset_length
         elif dataset_type == 'val':
-            self.info_df = info_df.iloc[train_dataset_length:train_dataset_length+val_dataset_length]
+            self.info_df = info_df.iloc[train_dataset_length:]
             self.length = val_dataset_length
-        elif dataset_type == 'test':
-            self.info_df = info_df.iloc[train_dataset_length+val_dataset_length:]
-            self.length = test_dataset_length
 
     def __len__(self):
         return self.length
@@ -74,8 +72,64 @@ class TinySol(Dataset):
             "dynamics_id": dynamics_id,
             "fold": fold,
         }
+    
+class NTVOW(Dataset):
+    def __init__(self,
+                 dataset_path:str,
+                 dataset_type:str,
+                 filterbank_specs:dict,
+                 target_filterbank:torch.tensor) -> None:
+        super().__init__()
+
+        self.dataset_path = dataset_path
+        files = os.listdir(self.dataset_path)
+
+        if '.DS_Store' in files:
+            files.remove('.DS_Store')
+        
+        self.seg_length = 4095/48000
+        self.filterbank_specs = filterbank_specs
+        self.target_filterbank = target_filterbank
+        length = len(files)
+        # scramle files
+        np.random.shuffle(files)
+
+        train_length = int(length*0.9)
+        val_length = int(length*0.1)
+
+        train_files = files[:train_length]
+        val_files = files[train_length:]
+
+        if dataset_type == 'train':
+            self.files = train_files
+            self.length = train_length
+        elif dataset_type == 'val':
+            self.files = val_files
+            self.length = val_length
+        else:
+            raise ValueError("dataset_type must be either 'train' or 'val'")
 
 
+    def __len__(self):
+        return self.length
+    
+    def __getitem__(self, idx:int):
+
+        file = self.files[idx]
+        x, fs = soundfile.read(os.path.join(self.dataset_path, file))
+        seg_length = self.seg_length * fs
+
+        # sample from middle a segment
+        start = int(max(x.shape[0]//2 - seg_length//2, 0))
+        stop = int(min(x.shape[0]//2 + seg_length//2, x.shape[0]-1))
+        x = torch.tensor(librosa.util.fix_length(x[start:stop], size=int(seg_length)), dtype=torch.float32)
+
+        x_out = filterbank_response_fft(x.unsqueeze(0), self.target_filterbank, self.filterbank_specs).squeeze(0)
+
+        return {
+            "x": x,
+            "x_out": x_out,
+        }
 
 if __name__ == "__main__":
     import pickle
@@ -83,7 +137,7 @@ if __name__ == "__main__":
     from torch.utils.data import DataLoader
     import matplotlib.pyplot as plt
 
-    target = 'VQT'
+    target = 'MEL'
     # get current working directory of file
     cwd = os.path.dirname(os.path.abspath(__file__))
 
@@ -104,12 +158,20 @@ if __name__ == "__main__":
         "batch_size": 1
     }
 
-    example = TinySol(
-        info_csv_path="/Users/felixperfler/Documents/ISF/Random-Filterbanks/TinySOL_metadata.csv",
-        data_dir="/Users/felixperfler/Documents/ISF/Random-Filterbanks/TinySOL2020",
+    # example = TinySol(
+    #     info_csv_path="/Users/felixperfler/Documents/ISF/Random-Filterbanks/TinySOL_metadata.csv",
+    #     data_dir="/Users/felixperfler/Documents/ISF/Random-Filterbanks/TinySOL2020",
+    #     target_filterbank=FB_torch,
+    #     filterbank_specs=spec,
+    #     dataset_type='test'
+    # )
+
+
+    example = NTVOW(
+        "/Users/felixperfler/Documents/ISF/Random-Filterbanks/NTVOW",
+        'val',
         target_filterbank=FB_torch,
         filterbank_specs=spec,
-        dataset_type='test'
     )
 
     dataloader = DataLoader(example, batch_size=1, shuffle=True, num_workers=0)
