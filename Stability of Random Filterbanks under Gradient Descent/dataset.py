@@ -87,7 +87,7 @@ class NTVOW(Dataset):
         if '.DS_Store' in files:
             files.remove('.DS_Store')
         
-        self.seg_length = 4095/48000
+        self.seg_length = 4092/48000
         self.filterbank_specs = filterbank_specs
         self.target_filterbank = target_filterbank
         length = len(files)

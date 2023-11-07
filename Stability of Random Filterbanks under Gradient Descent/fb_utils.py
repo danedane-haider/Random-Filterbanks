@@ -143,3 +143,41 @@ def circulant(w):
     tmp = torch.cat([w.flip((dim,)), torch.narrow(w.flip((dim,)), dim=dim, start=0, length=N-1)], dim=dim)
     tmp = tmp.unfold(dim, N, 1).flip((-1,))
     return tmp.reshape(J*N, N)
+
+# make tight
+
+def tight(w, ver='poly'):
+    if ver == 'poly':
+        M, N = w.shape
+        w_freqz = np.fft.fft(w,axis=1).T
+        w_tight = np.zeros((M, N), dtype=np.complex64)
+        for k in range(N):
+            H = w_freqz[k, :]
+            U = H / np.linalg.norm(H)
+            w_tight[:,k] = np.conj(U)
+        w_tight = np.fft.ifft(w_tight.T, axis=0).T
+    else:
+        W = np.concatenate([sp.linalg.circulant(w[k, :]) for k in range(w.shape[0])])
+        S = np.matmul(W.T,W)
+        S_sq = np.linalg.inv(sp.linalg.sqrtm(S))
+        w_tight = np.matmul(S_sq,w.T).T
+    return w_tight
+
+# make tight with fixed support
+
+def fir_tightener3000(w, supp, eps=1.1, print_kappa=False):
+    '''
+    input:  w - filterbank
+            supp - filter support
+            eps - threshold for kappa
+    '''
+    A,B = frame_bounds_lp(w)
+    w_tight = w.copy()
+    while B/A > eps:
+        w_tight = tight(w_tight, ver='poly')
+        w_tight = np.real(w_tight)
+        w_tight[:,supp:] = 0
+        A,B = frame_bounds_lp(w_tight)
+        if print_kappa:
+            print('kappa:', B/A, 'error:', np.linalg.norm(w-w_tight))
+    return w_tight
