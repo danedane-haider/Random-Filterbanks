@@ -143,3 +143,50 @@ def circulant(w):
     tmp = torch.cat([w.flip((dim,)), torch.narrow(w.flip((dim,)), dim=dim, start=0, length=N-1)], dim=dim)
     tmp = tmp.unfold(dim, N, 1).flip((-1,))
     return tmp.reshape(J*N, N)
+
+
+def tight(w, ver='S'):
+    """
+    Construction of the canonical tight filterbank
+    :param w: analysis filterbank
+    :param ver: version of the tight filterbank: 'S' yields canonical tight filterbank, 'flat_spec' yields tight filterbank with flat spectral response
+    :return: canonical tight filterbank
+    """
+    if ver == 'S':
+        w_freqz = np.fft.fft(w,axis=1)
+        lp = np.sum(np.abs(w_freqz)**2,axis=0)
+        w_freqz_tight = w_freqz * lp**(-0.5)
+        w_tight = np.fft.ifft(w_freqz_tight,axis=1)
+    elif ver == 'flat_spec':
+        M, N = w.shape
+        w_freqz = np.fft.fft(w,axis=1).T
+        w_tight = np.zeros((M, N), dtype=np.complex64)
+        for k in range(N):
+            H = w_freqz[k, :]
+            U = H / np.linalg.norm(H)
+            w_tight[:,k] = np.conj(U)
+        w_tight = np.fft.ifft(w_tight.T, axis=0).T
+    else:
+        raise NotImplementedError
+    return w_tight
+
+def fir_tight(w, supp, eps=1.05, print_kappa=False):
+    """
+    Iterative construction of a tight filterbank with a given support
+    :param w: analysis filterbank
+    :param supp: desired support of the tight filterbank
+    :param eps: desired precision for kappa = B/A
+    :return: tight filterbank
+    """
+    A,B = fb.frame_bounds_lp(w)
+    w_tight = w.copy()
+    while B/A > eps:
+        w_tight = tight(w_tight)
+        w_tight[:,supp:] = 0
+        w_tight = np.real(w_tight)
+        A,B = fb.frame_bounds_lp(w_tight)
+        kappa = B/A
+        error = np.linalg.norm(w-w_tight)
+        if print_kappa:
+            print('kappa:', '%.4f' % kappa, ', error:', '%.4f' % error)
+    return w_tight
