@@ -27,3 +27,15 @@ class TDFilterbank(torch.nn.Module):
 
         Ux = F.avg_pool1d(Wx, kernel_size=self.spec["N"]//self.spec["stride"], stride=1)
         return Ux
+    
+class Classifier(torch.nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        
+        self.fc1 = torch.nn.Linear(96, 128)
+        self.fc2 = torch.nn.Linear(128, num_classes)
+
+    def forward(self, x):
+        x = F.sigmoid(self.fc1(x))
+        x = F.softmax(self.fc2(x))
+        return x

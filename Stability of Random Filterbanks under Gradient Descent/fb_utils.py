@@ -178,13 +178,13 @@ def fir_tight(w, supp, eps=1.05, print_kappa=False):
     :param eps: desired precision for kappa = B/A
     :return: tight filterbank
     """
-    A,B = fb.frame_bounds_lp(w)
+    A,B = frame_bounds_lp(w)
     w_tight = w.copy()
     while B/A > eps:
         w_tight = tight(w_tight)
         w_tight[:,supp:] = 0
         w_tight = np.real(w_tight)
-        A,B = fb.frame_bounds_lp(w_tight)
+        A,B = frame_bounds_lp(w_tight)
         kappa = B/A
         error = np.linalg.norm(w-w_tight)
         if print_kappa:

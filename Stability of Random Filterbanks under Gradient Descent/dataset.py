@@ -38,6 +38,11 @@ class TinySol(Dataset):
             self.info_df = info_df.iloc[train_dataset_length:]
             self.length = val_dataset_length
 
+        instrument_classes = info_df['Instrument (abbr.)'].unique()
+        # map instrument classes to integers
+        self.instrument_to_int = {instrument: i for i, instrument in enumerate(instrument_classes)}
+        self.int_to_instrument = {i: instrument for i, instrument in enumerate(instrument_classes)}
+
     def __len__(self):
         return self.length
 
@@ -64,6 +69,9 @@ class TinySol(Dataset):
 
         x_out = filterbank_response_fft(x.unsqueeze(0), self.target_filterbank, self.filterbank_specs).squeeze(0)
 
+        instrument_vec = np.zeros(len(self.instrument_to_int))
+        instrument_vec[self.instrument_to_int[instrument]] = 1
+
         return {
             "x": x,
             "x_out": x_out,
@@ -72,6 +80,7 @@ class TinySol(Dataset):
             "pitch_id": pitch_id,
             "dynamics_id": dynamics_id,
             "fold": fold,
+            "instrument_vec": instrument_vec,
         }
     
 class NTVOW(Dataset):
