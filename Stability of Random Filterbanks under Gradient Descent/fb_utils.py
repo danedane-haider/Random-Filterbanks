@@ -120,7 +120,7 @@ def filterbank_response_fft(x, w, spec):
     # Ux = F.conv1d(Wx, phi, bias=None, stride=1, padding=0)
 
     Ux = F.avg_pool1d(Wx, kernel_size=spec["N"]//spec["stride"], stride=1)
-    return Ux
+    return Wx
 
 # generate a dataset of random sine waves
 
