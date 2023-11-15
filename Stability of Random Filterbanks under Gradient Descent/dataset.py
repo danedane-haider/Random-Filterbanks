@@ -24,8 +24,8 @@ class TinySol(Dataset):
 
         # split dataset into train, val, test
         dataset_length = len(info_df)
-        train_dataset_length = int(dataset_length*0.9)
-        val_dataset_length = int(dataset_length*0.1)
+        train_dataset_length = int(dataset_length*0.8)
+        val_dataset_length = int(dataset_length*0.2)
 
         # scramble dataset
         info_df = info_df.sample(frac=1).reset_index(drop=True)
