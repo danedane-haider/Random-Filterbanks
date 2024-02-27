@@ -173,7 +173,7 @@ def tight(w, ver='S'):
 
 # make tight with fixed support
 
-def fir_tightener3000(w, supp, eps=1.1, print_kappa=False):
+def fir_tightener3000(w, supp, eps=1.01, print_kappa=False):
     """
     Iterative construction of a tight filterbank with a given support
     :param w: analysis filterbank
@@ -193,3 +193,16 @@ def fir_tightener3000(w, supp, eps=1.1, print_kappa=False):
         if print_kappa:
             print('kappa:', '%.4f' % kappa, ', error:', '%.4f' % error)
     return w_tight
+
+def fir_tightener4000(w, supp, eps=1.01, print_kappa=False):
+    """
+    Iterative construction of a tight filterbank with a given support
+    :param w: analysis filterbank
+    :param supp: desired support of the tight filterbank
+    :param eps: desired precision for kappa = B/A
+    :return: tight filterbank
+    """
+    for i in range(w.shape[0]):
+        filter = w[i,:].reshape(1,-1)
+        w[i,:] = fir_tightener3000(filter, supp, eps)
+    return w
